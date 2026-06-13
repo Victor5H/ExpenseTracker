@@ -35,4 +35,38 @@ public class PaymentTypeController {
     public List<PaymentType> getAllPaymentTypes() {
         return paymentTypeRepository.findAll();
     }
+
+    @GetMapping("/{id}")
+    public PaymentType getPaymentTypeById(@PathVariable Long id) {
+        return paymentTypeRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "PaymentType not found"));
+    }
+
+    @PutMapping("/{id}")
+    public PaymentType updatePaymentType(@PathVariable Long id, @RequestBody PaymentType paymentTypeDetails) {
+        PaymentType paymentType = paymentTypeRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "PaymentType not found"));
+
+        if (paymentTypeDetails.getType() == null || paymentTypeDetails.getType().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "PaymentType type cannot be empty");
+        }
+        String trimmed = paymentTypeDetails.getType().trim();
+        paymentTypeRepository.findByType(trimmed).ifPresent(p -> {
+            if (!p.getId().equals(id)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "PaymentType type already exists");
+            }
+        });
+
+        paymentType.setType(trimmed);
+        return paymentTypeRepository.save(paymentType);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePaymentType(@PathVariable Long id) {
+        if (!paymentTypeRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "PaymentType not found");
+        }
+        paymentTypeRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }
